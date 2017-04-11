@@ -4,6 +4,7 @@ import navbar from '../components/navbar.vue'
 import tabview from '../components/tabview.vue'
 import gameInfo from './gameinfo.js'
 import slideMenu from '../components/slide-menu.vue'
+import gifEditor from '../components/gif-editor.vue'
 import xml2json from './xml2json'
 import pluginManager from './pluginManager.js'
 
@@ -31,8 +32,8 @@ const pluginEvent = {
   'i4u2L2LJ':'orb-init',
   'Y0d4Yhj1':'none',
   'E935RTof':'none',
-  'PeMDvjps':'none',
-  'jWbtv5NR':'none', //心跳
+  'PeMDvjps':'test',
+  'jWbtv5NR':'heart', //心跳
   'AekvKZk6':'none',
   'zzdfsknw':'present-info',
   'eZ5wrQTH':'crystal-change',
@@ -44,7 +45,7 @@ Vue.use(VueRouter);
 
 const vm = new Vue({
   el: '#playermain',
-  components : {navbar,tabview,slideMenu},
+  components : {navbar,tabview,slideMenu,gifEditor},
   data:{
     //Navbar上可爱的按钮们
     Buttons:[
@@ -65,6 +66,25 @@ const vm = new Vue({
         clickFunction:function(){
           //通知当前标签页刷新
           vm.$emit("refresh");
+        }
+      },
+      {
+        img:"./static/img/record.png",
+        isRight:false,
+        enabled:true,
+        clickFunction:()=>{
+          //vm.openGifEditor();
+          eventHub.$emit('start-record');
+        }
+      },
+      {
+        img:"./static/img/stop.png",
+        isRight:false,
+        enabled:true,
+        clickFunction:function(){
+          //停止录制
+          eventHub.$emit('stop-record');
+          //if(vm.$data.gif !== null) vm.$data.gif.render();
         }
       },
       //muted
@@ -108,7 +128,10 @@ const vm = new Vue({
     },
     eventHub,
     accounts:[],
-    pluginsInfo:undefined
+    pluginsInfo:undefined,
+    gif:null,
+    imgDatas:[],
+    isEditorShow: false
   },
   methods:{
     //切换标签时调整窗口大小
@@ -191,7 +214,6 @@ const vm = new Vue({
     },
     saveConfigFile:function(){
       let obj = this.globalSetting;
-
       let arr = [];
       for(let index in this.accounts){
         //跳过空的
@@ -207,6 +229,10 @@ const vm = new Vue({
 
       obj.accounts = arr;
       fs.writeFileSync('config.conf',JSON.stringify(obj));
+      console.log('保存成功');
+    },
+    openGifEditor:function(){
+      this.isEditorShow = true;
     }
   },
   created: function(){
@@ -287,8 +313,9 @@ const vm = new Vue({
         password:this.accounts[index].password
       };
       this.accounts[index].usedOn = this.activeGameInfo.id;
+
       //呼叫页面刷新
-      eventHub.$emit('deepFresh');
+      if(thistab.selectedGame !== 'none') ventHub.$emit('deepFresh');
       //通知侧边栏
       eventHub.$emit('main-account-selected',this.activeGameInfo.id);
     });
@@ -304,6 +331,7 @@ const vm = new Vue({
       if(type == undefined || type == 'none') return;
       let obj = xml2json(body);
       if(obj.DA != undefined) obj = obj.DA;
+      console.log(path,obj);
       eventHub.$emit('new-game-data',{
         type:type,
         obj:obj,
@@ -313,6 +341,19 @@ const vm = new Vue({
 
     eventHub.$on('active-plugin',function(index){
       plugin.activePlugin(index);
+    })
+
+    //GIF录制事件
+    eventHub.$on('add-new-frame',(data)=>{
+      if(this.gif === null) return;
+      //转换数组
+      let pxData = Uint8ClampedArray.from(data.data);
+      let imageData = new ImageData(pxData,data.width,data.height);
+      this.gif.addFrame(imageData,{delay: 200});
+    });
+    //GIF编辑器
+    eventHub.$on('editor-close',()=>{
+      this.isEditorShow = false;
     })
   },
   mounted: function(){
