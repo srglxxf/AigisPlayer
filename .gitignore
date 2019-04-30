@@ -1,7 +1,6 @@
 node_modules
 images
 image/
-app
 release
 proxy.conf
 user.conf
@@ -10,3 +9,13 @@ dist
 setting.conf
 release-normal
 release-green
+.vs/
+config.conf
+dist-green
+app-builds
+mod
+/plugins
+extensions
+/mods
+yarn.lock
+test/
